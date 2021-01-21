@@ -1,18 +1,36 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: minecraft
+  name: minecraft-tcp
   labels:
     app: minecraft
+  annotations:
+    metallb.universe.tf/allow-shared-ip: minecraft
 spec:
   ports:
     - port: 25565
       protocol: TCP
       name: tcp
+  type: LoadBalancer
+  loadBalancerIP: 10.5.0.99
+  selector:
+    app: minecraft
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft-udp
+  labels:
+    app: minecraft
+  annotations:
+    metallb.universe.tf/allow-shared-ip: minecraft
+spec:
+  ports:
     - port: 25565
       protocol: UDP
       name: udp
-  clusterIP: None
+  type: LoadBalancer
+  loadBalancerIP: 10.5.0.99
   selector:
     app: minecraft
 ---
@@ -35,14 +53,15 @@ spec:
         - name: download-world-save
           image: amazon/aws-cli
           command:
+            - aws
             - s3
             - cp
-            - s3://jsj-mineraft-backups
+            - s3://jsj-minecraft-backups/latest.tar.gz
             - latest.tar.gz
-            - /usr/app/mineraft/latest.tar.gz
+          workingDir: /usr/app/minecraft
           volumeMounts:
             - name: base
-              mountPath: /usr/app/mineraft
+              mountPath: /usr/app/minecraft
           env:
             - name: AWS_REGION
               value: eu-west-1
@@ -59,18 +78,21 @@ spec:
         - name: extract-world-save
           image: busybox
           command:
-            - sh
-            - -c
-            - 'cd /usr/app/minecraft && tar xf /usr/app/mineraft/latest.tar.gz'
+            - tar
+            - xf
+            - /usr/app/minecraft/latest.tar.gz
+          workingDir: /usr/app/minecraft
           volumeMounts:
             - name: base
-              mountPath: /usr/app/mineraft
+              mountPath: /usr/app/minecraft
       containers:
         - name: minecraft
           image: openjdk:11
           command:
+            - java
             - -jar
-            - /usr/app/minecraft/spigot-1.16.1.jar
+            - /usr/app/minecraft/server.jar
+          workingDir: /usr/app/minecraft
           ports:
             - containerPort: 25565
               protocol: TCP
@@ -80,7 +102,7 @@ spec:
               name: udp
           volumeMounts:
             - name: base
-              mountPath: /usr/app/mineraft
+              mountPath: /usr/app/minecraft
   volumeClaimTemplates:
     - metadata:
         name: base

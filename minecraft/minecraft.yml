@@ -53,11 +53,9 @@ spec:
         - name: download-world-save
           image: amazon/aws-cli
           command:
-            - aws
-            - s3
-            - cp
-            - s3://jsj-minecraft-backups/latest.tar.gz
-            - latest.tar.gz
+            - sh
+            - -c
+            - "test '[[ ! -f /usr/app/minecraft/server.jar ]] && aws s3 cp s3://jsj-minecraft-backups/latest.tar.gz latest.tar.gz'"
           workingDir: /usr/app/minecraft
           volumeMounts:
             - name: base
@@ -78,9 +76,9 @@ spec:
         - name: extract-world-save
           image: busybox
           command:
-            - tar
-            - xf
-            - /usr/app/minecraft/latest.tar.gz
+            - sh
+            - -c
+            - "test '[[ ! -f /usr/app/minecraft/server.jar ]] && tar xf /usr/app/minecraft/latest.tar.gz'"
           workingDir: /usr/app/minecraft
           volumeMounts:
             - name: base

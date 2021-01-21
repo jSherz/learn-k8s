@@ -1,6 +1,6 @@
 # learn-k8s
 
-This is a repo of Kubernetes experiments that are definitely not production  
+This is a repo of Kubernetes experiments that are definitely not production
 ready!
 
 ## minecraft
